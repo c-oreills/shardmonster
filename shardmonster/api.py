@@ -117,6 +117,18 @@ def start_migration(realm, shard_key, new_location):
     """Marks a shard as being in the process of being migrated.
     """
     shards_coll = _get_shards_coll()
+
+    shard_metas = list(
+        shards_coll.find({'realm': realm, 'shard_key': shard_key},))
+
+    if not shard_metas:
+        raise Exception(
+            'Could not find shard metadata - use set_shard_at_rest first')
+
+    shard_meta, = shard_metas
+    if shard_meta['location'] == new_location:
+        raise Exception('Shard is already at %s' % (new_location,))
+
     shards_coll.update(
         {'realm': realm, 'shard_key': shard_key},
         {'$set': {
